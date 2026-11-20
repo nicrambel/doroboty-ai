@@ -232,7 +232,7 @@ test("unreadable save stays untouched while the user works in memory", async ({ 
   await page.goto("/");
   await page.evaluate((key) => localStorage.setItem(key, '{"version":999}'), STORAGE_KEY);
   await page.reload();
-  await expect(page.getByRole("status")).toContainText("nie zostaną nadpisane");
+  await expect(page.getByRole("status").filter({ hasText: "nie zostaną nadpisane" })).toBeVisible();
   await choose(page, "Anna Kowalska");
   expect(await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBe(
     '{"version":999}',
