@@ -67,7 +67,7 @@ const employerNav = [
   ["/app/organizacja", "Organizacja", Building2],
 ] as const;
 export function Shell() {
-  const { state, issue, error, clearError } = usePrototype();
+  const { state, issue, error, clearError, writePending } = usePrototype();
   const person = currentPerson(state);
   const { pathname } = useLocation();
   const workspace = pathname.startsWith("/app") && person;
@@ -105,9 +105,13 @@ export function Shell() {
           {error}
         </p>
       )}
-      <div key={`${state.activePersonId}:${pathname}`}>
-        <Outlet />
-      </div>
+      {writePending ? (
+        <Notice>Sprawdzanie dostępu do lokalnego zapisu…</Notice>
+      ) : (
+        <div key={`${state.activePersonId}:${pathname}`}>
+          <Outlet />
+        </div>
+      )}
     </>
   );
   return (
@@ -124,7 +128,7 @@ export function Shell() {
       </a>
       {workspace ? (
         <div className="app-frame">
-          <div className="mobile-header">
+          <div className="mobile-header" role="banner" aria-label="Nawigacja mobilna">
             <Link to="/" className="brand">
               <BrandMark />
               DoRoboty.ai
@@ -187,7 +191,7 @@ export function Shell() {
             </nav>
           </aside>
           <div className="workspace">
-            <div className="topbar">
+            <div className="topbar" role="region" aria-label="Bieżąca osoba">
               <span>
                 {person.role === "candidate"
                   ? "Strefa kandydata"

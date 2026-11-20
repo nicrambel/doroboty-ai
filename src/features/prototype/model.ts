@@ -2,6 +2,14 @@ import { z } from "zod";
 import marketplace from "./data/marketplace.json" with { type: "json" };
 import people from "./data/people.json" with { type: "json" };
 import type { JobWithCompany } from "@/features/jobs/types";
+import demo from "./data/i1-demo.json" with { type: "json" };
+import {
+  projectSchema,
+  projectDataSchema,
+  submittedProject,
+  contributionReviewSchema,
+  type ProjectContributionValue,
+} from "./project-contribution-model";
 
 const id = z
   .string()
@@ -70,7 +78,7 @@ const personSchema = profileSchema.extend({
   role: z.enum(["candidate", "employer", "operator"]),
   companyId: id.optional(),
   cv: text,
-  exampleScore: z.number().int().min(0).max(100),
+  exampleScore: z.number().int().min(0).max(100).nullable(),
   exampleSummary: text,
 });
 export const stages = [
@@ -115,13 +123,15 @@ const applicationSchema = z.object({
   answer: text.min(MIN_APPLICATION_ANSWER_LENGTH),
   sourceNotes: text,
   generatedAnswer: text,
-  score: z.number().int().min(0).max(100),
+  score: z.number().int().min(0).max(100).nullable(),
   summary: text,
   stage: z.enum(stages),
   events: z
     .array(z.object({ stage: z.enum(stages), at: z.iso.datetime(), note: text }))
     .min(1)
     .max(30),
+  project: projectSchema.optional(),
+  contributionReview: contributionReviewSchema.optional(),
 });
 const draftSchema = z.object({
   candidateId: id,
@@ -129,79 +139,157 @@ const draftSchema = z.object({
   notes: text,
   generated: text,
   answer: text,
+  project: projectSchema.optional(),
 });
-export const stateSchema = z
-  .object({
-    version: z.literal(1),
-    activePersonId: id.nullable(),
-    companies: z.array(companySchema).min(1).max(200),
-    jobs: z.array(jobSchema).min(1).max(1000),
-    people: z.array(personSchema).min(1).max(100),
-    applications: z.array(applicationSchema).max(2000),
-    saved: z.array(z.object({ candidateId: id, jobId: id })).max(5000),
-    drafts: z.array(draftSchema).max(1000),
-  })
-  .superRefine((s, ctx) => {
-    const problem = (message: string) => ctx.addIssue({ code: "custom", message });
-    for (const list of [s.companies, s.jobs, s.people, s.applications]) {
-      if (new Set(list.map((x) => x.id)).size !== list.length) problem("Duplicate identifiers");
-    }
+const stateObjectSchema = z.object({
+  version: z.literal(2),
+  loadedDemos: z.array(id).max(20).default([]),
+  activePersonId: id.nullable(),
+  companies: z.array(companySchema).min(1).max(200),
+  jobs: z.array(jobSchema).min(1).max(1000),
+  people: z.array(personSchema).min(1).max(100),
+  applications: z.array(applicationSchema).max(2000),
+  saved: z.array(z.object({ candidateId: id, jobId: id })).max(5000),
+  drafts: z.array(draftSchema).max(1000),
+});
+export const stateSchema = stateObjectSchema.superRefine((s, ctx) => {
+  const problem = (message: string) => ctx.addIssue({ code: "custom", message });
+  for (const list of [s.companies, s.jobs, s.people, s.applications]) {
+    if (new Set(list.map((x) => x.id)).size !== list.length) problem("Duplicate identifiers");
+  }
+  if (
+    new Set(s.jobs.map((x) => x.slug)).size !== s.jobs.length ||
+    new Set(s.companies.map((x) => x.slug)).size !== s.companies.length
+  )
+    problem("Duplicate slugs");
+  const companyIds = new Set(s.companies.map((x) => x.id));
+  if (new Set(s.loadedDemos).size !== s.loadedDemos.length) problem("Duplicate demo identifiers");
+  if (
+    s.loadedDemos.includes(demo.id) &&
+    (!s.people.some(
+      (person) => person.id === "candidate-alicja-i1" && person.role === "candidate",
+    ) ||
+      !s.people.some(
+        (person) =>
+          person.id === "employer-ewa-i1" &&
+          person.role === "employer" &&
+          companyIds.has(person.companyId ?? ""),
+      ))
+  )
+    problem("Missing loaded demo personas");
+  const jobs = new Map(s.jobs.map((x) => [x.id, x]));
+  const candidates = new Set(s.people.filter((x) => x.role === "candidate").map((x) => x.id));
+  if (s.activePersonId !== null && !s.people.some((x) => x.id === s.activePersonId))
+    problem("Unknown active person");
+  for (const p of s.people)
+    if (p.role === "employer" && (!p.companyId || !companyIds.has(p.companyId)))
+      problem("Unknown employer company");
+  for (const j of s.jobs) if (!companyIds.has(j.companyId)) problem("Unknown job company");
+  const keys = new Set<string>();
+  for (const a of s.applications) {
+    const key = `${a.candidateId}:${a.jobId}`;
     if (
-      new Set(s.jobs.map((x) => x.slug)).size !== s.jobs.length ||
-      new Set(s.companies.map((x) => x.slug)).size !== s.companies.length
+      !candidates.has(a.candidateId) ||
+      jobs.get(a.jobId)?.companyId !== a.companyId ||
+      keys.has(key)
     )
-      problem("Duplicate slugs");
-    const companyIds = new Set(s.companies.map((x) => x.id));
-    const jobs = new Map(s.jobs.map((x) => [x.id, x]));
-    const candidates = new Set(s.people.filter((x) => x.role === "candidate").map((x) => x.id));
-    if (s.activePersonId !== null && !s.people.some((x) => x.id === s.activePersonId))
-      problem("Unknown active person");
-    for (const p of s.people)
-      if (p.role === "employer" && (!p.companyId || !companyIds.has(p.companyId)))
-        problem("Unknown employer company");
-    for (const j of s.jobs) if (!companyIds.has(j.companyId)) problem("Unknown job company");
-    const keys = new Set<string>();
-    for (const a of s.applications) {
-      const key = `${a.candidateId}:${a.jobId}`;
-      if (
-        !candidates.has(a.candidateId) ||
-        jobs.get(a.jobId)?.companyId !== a.companyId ||
-        keys.has(key)
-      )
-        problem("Invalid application reference");
-      keys.add(key);
-      if (a.events[0]?.stage !== "submitted" || a.events.at(-1)?.stage !== a.stage)
-        problem("Invalid application history");
-      for (let i = 1; i < a.events.length; i++) {
-        const before = a.events[i - 1];
-        const after = a.events[i];
-        if (!(
-          nextStages[before.stage].includes(after.stage) ||
-          (after.stage === "withdrawn" &&
-            !["hired", "rejected", "withdrawn"].includes(before.stage))
+      problem("Invalid application reference");
+    keys.add(key);
+    if (a.project) {
+      try {
+        submittedProject(a.project);
+      } catch {
+        problem("Incomplete submitted project");
+      }
+    }
+    const review = a.contributionReview;
+    if (
+      review &&
+      (!a.project ||
+        review.projectRevision !== a.project.revision ||
+        !s.people.some(
+          (p) => p.id === review.reviewerId && p.role === "employer" && p.companyId === a.companyId,
         ))
-          problem("Invalid stage transition");
-        if (after.at < before.at) problem("Invalid event order");
-      }
+    )
+      problem("Invalid contribution review reference");
+    if (a.events[0]?.stage !== "submitted" || a.events.at(-1)?.stage !== a.stage)
+      problem("Invalid application history");
+    for (let i = 1; i < a.events.length; i++) {
+      const before = a.events[i - 1];
+      const after = a.events[i];
+      if (!(
+        nextStages[before.stage].includes(after.stage) ||
+        (after.stage === "withdrawn" && !["hired", "rejected", "withdrawn"].includes(before.stage))
+      ))
+        problem("Invalid stage transition");
+      if (after.at < before.at) problem("Invalid event order");
     }
-    for (const list of [s.saved, s.drafts]) {
-      const pairs = new Set<string>();
-      for (const item of list) {
-        const key = `${item.candidateId}:${item.jobId}`;
-        if (!candidates.has(item.candidateId) || !jobs.has(item.jobId) || pairs.has(key))
-          problem("Invalid candidate/job reference");
-        pairs.add(key);
-      }
+  }
+  for (const list of [s.saved, s.drafts]) {
+    const pairs = new Set<string>();
+    for (const item of list) {
+      const key = `${item.candidateId}:${item.jobId}`;
+      if (!candidates.has(item.candidateId) || !jobs.has(item.jobId) || pairs.has(key))
+        problem("Invalid candidate/job reference");
+      pairs.add(key);
     }
-  });
+  }
+});
+// Validate the original v1 shapes before migration; never silently strip I1 data
+// from a mislabeled v2 application or draft.
+export const legacyStateSchema = stateObjectSchema
+  .extend({
+    version: z.literal(1),
+    people: z
+      .array(personSchema.extend({ exampleScore: z.number().int().min(0).max(100) }))
+      .min(1)
+      .max(100),
+    applications: z
+      .array(
+        applicationSchema
+          .omit({ project: true, contributionReview: true })
+          .extend({ score: z.number().int().min(0).max(100) })
+          .strict(),
+      )
+      .max(2000),
+    drafts: z.array(draftSchema.omit({ project: true }).strict()).max(1000),
+  })
+  .transform((state) => stateSchema.parse({ ...state, version: 2, loadedDemos: [] }));
 export type State = z.infer<typeof stateSchema>;
 export type Person = State["people"][number];
 export type Application = State["applications"][number];
+/** Candidate rendering receives only its submitted snapshot and public history. */
+export function candidateApplicationView(application: Application) {
+  return {
+    id: application.id,
+    companyId: application.companyId,
+    candidateId: application.candidateId,
+    candidateName: application.candidateName,
+    jobTitle: application.jobTitle,
+    cv: application.cv,
+    answer: application.answer,
+    score: application.score,
+    summary: application.summary,
+    stage: application.stage,
+    project: application.project,
+    events: application.events.map(({ stage, at }) => ({ stage, at })),
+  };
+}
+export type CandidateApplicationView = ReturnType<typeof candidateApplicationView>;
 export type Action =
   | { type: "select_person"; id: string | null }
   | { type: "profile"; value: z.infer<typeof profileSchema> }
   | { type: "toggle_saved"; jobId: string }
-  | { type: "draft"; jobId: string; notes: string; generated: string; answer: string }
+  | {
+      type: "draft";
+      jobId: string;
+      notes: string;
+      generated: string;
+      answer: string;
+      project?: ProjectContributionValue;
+    }
+  | { type: "load_i1_demo" }
+  | { type: "contribution_review"; applicationId: string; rationale: string; nextStep: string }
   | {
       type: "submit";
       jobId: string;
@@ -209,6 +297,7 @@ export type Action =
       generated: string;
       answer: string;
       consent: boolean;
+      project?: ProjectContributionValue;
     }
   | { type: "stage"; applicationId: string; stage: Stage; note: string }
   | { type: "withdraw"; applicationId: string }
@@ -217,7 +306,7 @@ export type Action =
 
 export function initialState(): State {
   const state = stateSchema.parse({
-    version: 1,
+    version: 2,
     activePersonId: null,
     ...marketplace,
     people,
@@ -278,6 +367,62 @@ export function transition(
     if (action.id !== null && !s.people.some((x) => x.id === action.id))
       fail("Nie znaleziono osoby.");
     s.activePersonId = action.id;
+  } else if (action.type === "load_i1_demo") {
+    if (s.loadedDemos.includes(demo.id)) return state;
+    const company = s.companies.find((item) => item.slug === demo.companySlug);
+    const job = s.jobs.find(
+      (item) =>
+        item.slug === demo.jobSlug &&
+        item.companyId === company?.id &&
+        item.publicationStatus === "published",
+    );
+    if (!company || !job)
+      fail("Scenariusz I1 wymaga dostępnej oferty AI Product Manager firmy BrightLabs.");
+    if (demo.people.some((item) => s.people.some((p) => p.id === item.id)))
+      fail("Identyfikatory demonstracji I1 są już zajęte. Dane nie zostały zmienione.");
+    s.people.push(
+      ...demo.people.map((item) =>
+        personSchema.parse({
+          ...item,
+          ...(item.role === "employer" ? { companyId: company!.id } : {}),
+        }),
+      ),
+    );
+    const data = projectDataSchema.parse(demo.project);
+    s.drafts.push(
+      draftSchema.parse({
+        candidateId: "candidate-alicja-i1",
+        jobId: job!.id,
+        notes: "",
+        generated: "",
+        answer: demo.answer,
+        project: {
+          revision: 1,
+          data,
+          explanation: {
+            synthetic: true,
+            basedOnRevision: 1,
+            basis: data,
+            entries: demo.explanations,
+          },
+        },
+      }),
+    );
+    s.loadedDemos.push(demo.id);
+  } else if (action.type === "contribution_review") {
+    const p = employer();
+    const application = s.applications.find(
+      (item) => item.id === action.applicationId && item.companyId === p.companyId,
+    );
+    if (!application?.project || !nextStages[application.stage].length)
+      return fail("Nie można zapisać uzasadnienia dla tego zgłoszenia.");
+    application.contributionReview = contributionReviewSchema.parse({
+      rationale: action.rationale,
+      nextStep: action.nextStep,
+      reviewerId: p.id,
+      savedAt: now,
+      projectRevision: application.project.revision,
+    });
   } else if (action.type === "profile")
     Object.assign(candidate(), profileSchema.parse(action.value));
   else if (action.type === "toggle_saved") {
@@ -310,6 +455,7 @@ export function transition(
         answer: action.answer,
         sourceNotes: action.notes,
         generatedAnswer: action.generated,
+        project: action.project ? submittedProject(action.project) : undefined,
         score: p.exampleScore,
         summary: p.exampleSummary,
         stage: "submitted",

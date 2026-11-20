@@ -16,7 +16,7 @@ const buttonVariants = cva(
         ghost:
           "bg-transparent text-[var(--gui-text)] [--control-hover-bg:var(--gui-color-1-transparent)]",
         destructive:
-          "bg-[var(--gui-error)] [--control-hover-bg:color-mix(in_srgb,var(--gui-error)_85%,var(--gui-text))] text-[var(--gui-neutral-10)] focus-visible:outline-[var(--gui-focus)]",
+          "bg-[var(--gui-error)] [--control-hover-bg:color-mix(in_srgb,var(--gui-error)_90%,white)] [--control-hover-text:var(--gui-danger-text)] text-[var(--gui-danger-text)] focus-visible:outline-[var(--gui-focus)]",
         link: "bg-transparent px-0 text-[var(--gui-link)] underline-offset-4 hover:underline [--control-hover-bg:var(--gui-color-1-transparent)]",
       },
       size: {

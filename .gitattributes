@@ -1,0 +1,2 @@
+# Canonical text bytes must match format, reference and baseline packet checks.
+* text=auto eol=lf

@@ -1,8 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import AxeBuilder from "@axe-core/playwright";
 import { initialState } from "../../src/features/prototype/model";
 import { STORAGE_KEY } from "../../src/features/prototype/storage";
 import { readFile } from "node:fs/promises";
+import { isExternalApplicationRequest } from "./network-policy";
 async function choose(page: Page, name: string) {
   await page.goto("/#/auth/sign-in");
   await page.getByRole("button", { name: `Wejdź jako ${name}`, exact: true }).click();
@@ -25,10 +26,11 @@ for (const [name, filename] of [
 ]) {
   test(`${name} has the same local PDF in profile, application and employer detail`, async ({
     page,
+    baseURL,
   }) => {
     const external: string[] = [];
     page.on("request", (request) => {
-      if (!request.url().startsWith("http://127.0.0.1:3106")) external.push(request.url());
+      if (isExternalApplicationRequest(request.url(), baseURL!)) external.push(request.url());
     });
     await choose(page, name);
     await page.goto("/#/app/profil");
@@ -230,7 +232,7 @@ test("unreadable save stays untouched while the user works in memory", async ({ 
   await page.goto("/");
   await page.evaluate((key) => localStorage.setItem(key, '{"version":999}'), STORAGE_KEY);
   await page.reload();
-  await expect(page.getByRole("status")).toContainText("nie zostaną nadpisane");
+  await expect(page.getByRole("status").filter({ hasText: "nie zostaną nadpisane" })).toBeVisible();
   await choose(page, "Anna Kowalska");
   expect(await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBe(
     '{"version":999}',
@@ -388,7 +390,14 @@ for (const width of [1440, 375]) {
         ),
       ),
     ).toBe(true);
+    const addProject = page.getByRole("button", { name: "Dodaj projekt", exact: true });
     await answer.focus();
+    await page.keyboard.press("Tab");
+    await expect(addProject).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("checkbox")).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(addProject).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("checkbox")).toBeFocused();
     await page.keyboard.press("Tab");
@@ -398,8 +407,13 @@ for (const width of [1440, 375]) {
     const editedAnswer = "Moja poprawiona odpowiedź opisuje doświadczenie potrzebne w tej roli.";
     await answer.fill(editedAnswer);
     await page.keyboard.press("Tab");
+    await expect(addProject).toBeFocused();
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("checkbox")).toBeFocused();
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Wyślij aplikację", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Zapisz szkic", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("status")).toHaveText("Szkic został zapisany.");
     expect(
@@ -419,8 +433,13 @@ for (const width of [1440, 375]) {
     });
     await answer.focus();
     await page.keyboard.press("Tab");
-    await page.keyboard.press("Space");
+    await expect(addProject).toBeFocused();
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("checkbox")).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("checkbox")).toBeChecked();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Wyślij aplikację", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByText("Aplikacja została wysłana.", { exact: false })).toBeVisible();
     expect(

@@ -1,0 +1,102 @@
+{
+  "id": "case-forge-i1-v1",
+  "companySlug": "brightlabs",
+  "jobSlug": "ai-product-manager",
+  "people": [
+    {
+      "id": "candidate-alicja-i1",
+      "role": "candidate",
+      "name": "Alicja",
+      "headline": "Fikcyjna kandydatka · scenariusz I1",
+      "bio": "Opisuję własny wkład w porządkowanie wiadomości w firmie Papierowy Most.",
+      "location": "Warszawa",
+      "cv": "Fikcyjne CV Alicji. Doświadczenie: udział w pilotażu porządkowania wiadomości z pomocą AI w firmie Papierowy Most. Zakres deklaracji i jego ograniczenia opisuje dołączony projekt.",
+      "exampleScore": null,
+      "exampleSummary": ""
+    },
+    {
+      "id": "employer-ewa-i1",
+      "role": "employer",
+      "name": "Ewa",
+      "headline": "Fikcyjna rekruterka · BrightLabs · I1",
+      "bio": "",
+      "location": "Warszawa",
+      "cv": "",
+      "exampleScore": null,
+      "exampleSummary": ""
+    }
+  ],
+  "answer": "Przedstawiam fikcyjny projekt porządkowania wiadomości w firmie Papierowy Most. Oddzielam deklarowane własne czynności od pracy zespołu i pomocy AI. Materiały ilustrują wybrane fragmenty projektu, ale nie potwierdzają autorstwa ani kompetencji.",
+  "project": {
+    "title": "Porządkowanie wiadomości w firmie Papierowy Most",
+    "context": "Fikcyjny pilotaż systemu przypisującego wiadomości do kategorii, np. faktury i reklamacje. AI proponowało kategorię, a pracownik mógł ją zatwierdzić lub poprawić. Wszystkie osoby, dokumenty i wyniki są syntetyczne.",
+    "ownWork": "Deklaruję opracowanie zasad kategorii, sprawdzanie propozycji AI i opisywanie błędów oraz uzgadnianie poprawek z obsługą.",
+    "teamWork": "Obsługa zgłaszała przypadki wymagające zmian zasad. Integrację wykonał programista. Dostępne materiały nie ustalają szczegółowego wkładu poszczególnych osób.",
+    "aiHelp": "AI proponowało kategorię wiadomości. Pracownik mógł zatwierdzić lub poprawić propozycję. Materiały nie potwierdzają rzeczywistej jakości systemu.",
+    "activities": [
+      {
+        "id": "activity-1",
+        "claim": "Opracowałam zasady kategorii wiadomości",
+        "materialId": "M1",
+        "unavailableReason": ""
+      },
+      {
+        "id": "activity-2",
+        "claim": "Sprawdzałam propozycje AI i opisywałam błędy",
+        "materialId": "M2",
+        "unavailableReason": ""
+      },
+      {
+        "id": "activity-3",
+        "claim": "Uzgadniałam poprawki zasad z obsługą",
+        "materialId": "M3",
+        "unavailableReason": ""
+      },
+      {
+        "id": "activity-4",
+        "claim": "Rozwiązanie działało w pilotażu; integrację wykonał programista",
+        "materialId": null,
+        "unavailableReason": "Nie mogę udostępnić materiału dotyczącego integracji ani używania rozwiązania."
+      }
+    ],
+    "materials": [
+      {
+        "id": "M1",
+        "title": "Fragment zasad kategorii",
+        "content": "Prośba o kopię faktury → Faktury. Zgłoszenie uszkodzenia produktu → Reklamacje. Wiadomość dotycząca obu spraw → ręczna ocena"
+      },
+      {
+        "id": "M2",
+        "title": "Fragment arkusza kontroli wyników",
+        "content": "S-01: Proszę o kopię faktury; propozycja AI: Reklamacje; korekta: Faktury; uwaga: brak zgłoszenia wady produktu"
+      },
+      {
+        "id": "M3",
+        "title": "Fragment notatki ze spotkania",
+        "content": "Zespół zgłosił wiadomości obejmujące kilka spraw. W propozycji zmian dodano ręczną ocenę takich przypadków"
+      }
+    ]
+  },
+  "explanations": [
+    {
+      "activityId": "activity-1",
+      "explanation": "Dokument pokazuje sposób rozróżniania wiadomości.",
+      "unknowns": "Kto napisał zasady i czy obejmują typowe przypadki."
+    },
+    {
+      "activityId": "activity-2",
+      "explanation": "Materiał ilustruje porównanie propozycji AI z zasadą oraz uzasadnienie korekty.",
+      "unknowns": "Autorstwo arkusza, reprezentatywność przykładów i rzeczywista jakość działania systemu."
+    },
+    {
+      "activityId": "activity-3",
+      "explanation": "Notatka przedstawia zmianę powiązaną z uwagami użytkowników.",
+      "unknowns": "Czy spotkanie się odbyło, jaki był osobisty udział Alicji i czy zmianę wdrożono."
+    },
+    {
+      "activityId": "activity-4",
+      "explanation": "Dostępne materiały nie pozwalają ocenić integracji ani potwierdzić faktycznego używania rozwiązania.",
+      "unknowns": "Działanie produkcyjne, skala wykorzystania, bezpieczeństwo, oszczędność czasu i wkład programisty."
+    }
+  ]
+}

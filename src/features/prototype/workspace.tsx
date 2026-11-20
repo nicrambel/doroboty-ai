@@ -10,12 +10,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { JobCard } from "@/features/jobs/job-card";
 import { ApplicationOfferPreview } from "@/features/jobs/application-offer-preview";
 import { usePrototype } from "./store";
-import { currentPerson, publishedJobs, stageLabels, MIN_APPLICATION_ANSWER_LENGTH } from "./model";
+import {
+  currentPerson,
+  publishedJobs,
+  stageLabels,
+  MIN_APPLICATION_ANSWER_LENGTH,
+  candidateApplicationView,
+} from "./model";
 import { PageTitle, Empty, NotFound, Notice } from "./shell";
 import { CvAttachment } from "./cv-attachment";
 import { MatchScore } from "./match-score";
 import { RecruitingApplication } from "./recruiting-application";
 import { CandidateApplication } from "./candidate-application";
+import { ProjectContributionEditor } from "./project-contribution-editor";
+import {
+  projectSubmissionIssue,
+  type ProjectContributionValue,
+} from "./project-contribution-model";
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -31,6 +42,7 @@ export function PersonPicker() {
   const [params] = useSearchParams();
   const next = params.get("next");
   const audience = params.get("audience");
+  const [demoMessage, setDemoMessage] = useState("");
   const people =
     audience === "candidate" || audience === "employer"
       ? state.people.filter((person) => person.role === audience)
@@ -42,6 +54,36 @@ export function PersonPicker() {
       <p className="mt-4 mb-8 text-muted-foreground">
         Wybierz profil, z którego chcesz korzystać w prototypie. Hasło nie jest potrzebne.
       </p>
+      <div className="prototype-panel mb-6">
+        <h2>Fikcyjny scenariusz I1 — Alicja i Ewa</h2>
+        <p className="my-4">
+          Projekt Papierowy Most, materiały M1–M3 i jawne niewiadome. E1 pozostaje planowany.
+          Wczytanie dodaje persony i szkic bez zmieniania istniejących przykładów.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (run({ type: "load_i1_demo" }))
+              setDemoMessage(
+                "Scenariusz I1 jest dostępny. Istniejące dane i Twoje zmiany zostały zachowane.",
+              );
+          }}
+        >
+          Wczytaj fikcyjny scenariusz I1
+        </Button>
+        {demoMessage && (
+          <p role="status" className="mt-4">
+            {demoMessage}
+          </p>
+        )}
+        {state.people.some((person) => person.id === "candidate-alicja-i1") && (
+          <p className="mt-4">
+            Wybierz Alicję, otwórz ofertę AI Product Manager i kliknij „Aplikuj”. Następnie wybierz
+            Ewę i otwórz „Kandydaci”.
+          </p>
+        )}
+      </div>
       <div className="grid gap-5 sm:grid-cols-2">
         {people.map((person) => (
           <article key={person.id} className="prototype-panel">
@@ -231,6 +273,11 @@ export function SavedPage() {
 }
 export function ApplyPage() {
   const { slug } = useParams();
+  const { state } = usePrototype();
+  return <ApplicationForm key={`${state.activePersonId}:${slug}`} />;
+}
+function ApplicationForm() {
+  const { slug } = useParams();
   const { state, run } = usePrototype();
   const person = currentPerson(state)!;
   const navigate = useNavigate();
@@ -239,6 +286,8 @@ export function ApplyPage() {
   const notes = draft?.notes ?? "";
   const generated = draft?.generated ?? "";
   const [answer, setAnswer] = useState(draft?.answer ?? "");
+  const [project, setProject] = useState<ProjectContributionValue | undefined>(draft?.project);
+  const [projectError, setProjectError] = useState("");
   const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState("");
   const [attempted, setAttempted] = useState(false);
@@ -277,11 +326,17 @@ export function ApplyPage() {
       answerInput.current?.focus();
       return;
     }
+    const projectIssue = project ? projectSubmissionIssue(project) : "";
+    if (projectIssue) {
+      setProjectError(projectIssue);
+      document.getElementById("contribution-editor")?.focus();
+      return;
+    }
     if (!consent) {
       document.getElementById("application-consent")?.focus();
       return;
     }
-    if (run({ type: "submit", jobId: job!.id, notes, generated, answer, consent })) {
+    if (run({ type: "submit", jobId: job!.id, notes, generated, answer, consent, project })) {
       submittedOnce.current = true;
       setSubmitted(true);
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -352,6 +407,21 @@ export function ApplyPage() {
                 : `Minimum ${MIN_APPLICATION_ANSWER_LENGTH} znaków. Obecnie: ${answerLength}.`}
             </p>
           </section>
+          <ProjectContributionEditor
+            project={project}
+            disabled={submitted}
+            onChange={(value) => {
+              setProject(value);
+              setConsent(false);
+              setProjectError("");
+              setMessage("");
+            }}
+          />
+          {projectError && (
+            <p className="error-message" role="alert">
+              {projectError}
+            </p>
+          )}
           <div className="application-form-section application-submit">
             <label className="application-consent">
               <Checkbox
@@ -364,7 +434,8 @@ export function ApplyPage() {
                 aria-label="Zatwierdzam treść i przesłanie aplikacji"
               />
               <span>
-                Zatwierdzam treść aplikacji i przesłanie profilu oraz przykładowego CV pracodawcy.
+                Zatwierdzam treść aplikacji i przesłanie profilu oraz przykładowego CV
+                {project ? ", projektu i przypisanych materiałów" : ""} pracodawcy.
               </span>
             </label>
             {consentInvalid && (
@@ -387,7 +458,7 @@ export function ApplyPage() {
                 disabled={submitted}
                 variant="outline"
                 onClick={() => {
-                  if (run({ type: "draft", jobId: job.id, notes, generated, answer }))
+                  if (run({ type: "draft", jobId: job.id, notes, generated, answer, project }))
                     setMessage("Szkic został zapisany.");
                 }}
               >
@@ -452,7 +523,11 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
                   </p>
                   <p>{stageLabels[a.stage]}</p>
                 </div>
-                <MatchScore score={a.score} />
+                {a.score !== null ? (
+                  <MatchScore score={a.score} />
+                ) : (
+                  <span className="record-caption">Bez oceny punktowej</span>
+                )}
               </div>
               {employer && <p className="mt-4 text-muted-foreground">{a.summary}</p>}
             </article>
@@ -474,5 +549,10 @@ export function ApplicationDetail({ employer = false }: { employer?: boolean }) 
   );
   if (!application) return <NotFound />;
   if (employer) return <RecruitingApplication key={application.id} application={application} />;
-  return <CandidateApplication key={application.id} application={application} />;
+  return (
+    <CandidateApplication
+      key={application.id}
+      application={candidateApplicationView(application)}
+    />
+  );
 }

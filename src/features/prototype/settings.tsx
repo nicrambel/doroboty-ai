@@ -39,8 +39,7 @@ export function SettingsPage() {
   }
   function confirm() {
     if (pending === "reset") {
-      reset();
-      setMessage("Przywrócono scenariusz początkowy.");
+      if (reset()) setMessage("Przywrócono scenariusz początkowy.");
     } else if (importState(raw)) {
       setMessage("Dane zostały zaimportowane.");
     }
@@ -125,12 +124,20 @@ export function PrivacyPage() {
         </p>
         <p>
           Profile, aplikacje i ustawienia pozostają w pamięci tej przeglądarki. Aplikacja nie wysyła
-          ich do bazy, dostawcy AI ani systemu analitycznego. Plik eksportu zawiera cały lokalny
-          scenariusz, w tym notatki.
+          ich do bazy ani dostawcy AI. Plik eksportu zawiera cały lokalny scenariusz, w tym notatki.
         </p>
         <p>
-          Możesz usunąć zmiany przyciskiem „Resetuj scenariusz” w ustawieniach lub wyczyścić dane
-          witryny w przeglądarce. Hosting może prowadzić własne logi dostępu.
+          Po włączeniu analityki PostHog otrzymuje odsłony typów ekranów i kliknięcia przycisków
+          oraz linków. Nie wysyłamy treści formularzy, CV, notatek, nazw osób, tekstu elementów ani
+          parametrów wyszukiwania. Nagrywanie sesji i profile osób są wyłączone. Losowy
+          identyfikator analityczny działa tylko do przeładowania strony; nie zapisujemy go w
+          ciasteczkach ani trwałej pamięci przeglądarki. Włączone w przeglądarce „Do Not Track”
+          wyłącza tę analitykę.
+        </p>
+        <p>
+          „Resetuj scenariusz” przywraca bieżący scenariusz. Oryginalny zapis starszej wersji v1
+          pozostaje jako kopia ratunkowa. Aby usunąć wszystkie lokalne kopie, wyczyść dane witryny w
+          przeglądarce. Hosting może prowadzić własne logi dostępu.
         </p>
       </div>
     </section>

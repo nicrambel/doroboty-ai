@@ -131,6 +131,7 @@
   /* Dark labels on pink actions. */
   --gui-accent-text-accessible: var(--gui-neutral-10);
   --gui-danger: var(--gui-error);
+  --gui-danger-text: #000000;
   --gui-focus: #181818;
   --gui-link: var(--gui-color-2);
   --gui-control: #ffffff;

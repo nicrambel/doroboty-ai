@@ -5,6 +5,7 @@ import { RecordSheet } from "@/components/record-sheet";
 import { CvAttachment } from "./cv-attachment";
 import { MatchScore } from "./match-score";
 import { stageLabels, type Application, type Stage } from "./model";
+import { ProjectContribution } from "./project-contribution";
 
 type RecordEvent = { stage: Stage; at: string; note?: string };
 const dateFormat = new Intl.DateTimeFormat("pl-PL", {
@@ -24,7 +25,15 @@ export function ApplicationRecord({
 }: {
   application: Pick<
     Application,
-    "candidateId" | "candidateName" | "jobTitle" | "stage" | "answer" | "cv" | "score" | "summary"
+    | "candidateId"
+    | "candidateName"
+    | "jobTitle"
+    | "stage"
+    | "answer"
+    | "cv"
+    | "score"
+    | "summary"
+    | "project"
   >;
   companyName: string;
   audience: "candidate" | "employer";
@@ -55,7 +64,11 @@ export function ApplicationRecord({
           <span className="record-stage" tabIndex={-1} ref={statusRef}>
             {stageLabels[application.stage]}
           </span>
-          <MatchScore score={application.score} />
+          {application.score !== null ? (
+            <MatchScore score={application.score} />
+          ) : (
+            <span>Bez oceny punktowej</span>
+          )}
           {submitted && (
             <span>
               Złożona:{" "}
@@ -93,6 +106,20 @@ export function ApplicationRecord({
                 </>
               ),
             },
+            ...(application.project
+              ? [
+                  {
+                    value: "contribution",
+                    label: "Wkład w projekt",
+                    content: (
+                      <ProjectContribution
+                        project={application.project}
+                        presentation={candidate ? "plain" : "i1"}
+                      />
+                    ),
+                  },
+                ]
+              : []),
           ]}
           footer={footer}
         >
@@ -110,10 +137,12 @@ export function ApplicationRecord({
               }))}
             />
           </section>
-          <section className="record-summary" aria-labelledby="summary-heading">
-            <h2 id="summary-heading">Podsumowanie</h2>
-            <p>{application.summary}</p>
-          </section>
+          {application.summary && (
+            <section className="record-summary" aria-labelledby="summary-heading">
+              <h2 id="summary-heading">Podsumowanie</h2>
+              <p>{application.summary}</p>
+            </section>
+          )}
         </aside>
       </div>
     </article>
