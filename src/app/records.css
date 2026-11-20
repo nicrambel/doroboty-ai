@@ -8,9 +8,82 @@
 }
 .record-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   border-bottom: 1px solid #d8d5d1;
   margin-bottom: 22px;
+}
+.project-contribution,
+.contribution-review {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.contribution-context > div,
+.contribution-evidence > div {
+  margin-top: 18px;
+}
+.contribution-context dt,
+.contribution-evidence dt {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.contribution-context dd,
+.contribution-evidence dd,
+.contribution-review p {
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.contribution-activities {
+  list-style: decimal;
+  padding-left: 22px;
+  margin-block: 24px;
+}
+.contribution-activities > li {
+  padding-block: 20px;
+  border-top: 1px solid var(--pp-line);
+}
+.contribution-material {
+  margin-block: 16px;
+}
+.contribution-material summary {
+  min-height: 44px;
+  padding: 10px 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.contribution-material summary:hover {
+  background: var(--gui-color-1-transparent);
+}
+.contribution-material summary:focus-visible {
+  outline: 2px solid var(--gui-focus);
+  outline-offset: 2px;
+}
+.contribution-disclaimer {
+  margin-block: 18px;
+  padding: 14px;
+  background: var(--background);
+  border-left: 2px solid var(--gui-text);
+}
+.contribution-review {
+  margin-bottom: 26px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--pp-line);
+}
+.contribution-review .field {
+  margin-block: 18px;
+}
+.contribution-review [data-slot="button"] {
+  max-width: 100%;
+  white-space: normal;
+}
+.contribution-review h4,
+.contribution-preview h4 {
+  margin-block: 18px;
 }
 .record-tabs .record-tab {
   position: relative;

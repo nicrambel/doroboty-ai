@@ -7,6 +7,7 @@ import {
   saveState,
   serializeState,
   STORAGE_KEY,
+  StorageConflictError,
 } from "./storage";
 function memory(raw: string | null = null) {
   const values = new Map(raw === null ? [] : [[STORAGE_KEY, raw]]);
@@ -18,6 +19,15 @@ function memory(raw: string | null = null) {
   };
 }
 describe("browser persistence and recovery", () => {
+  it("rejects a stale snapshot before replacing persisted data", () => {
+    const storage = memory();
+    const first = readState(storage);
+    const second = readState(storage);
+    const newer = { ...first.state, activePersonId: "candidate-anna" };
+    saveState(storage, newer, first.snapshot);
+    expect(() => saveState(storage, second.state, second.snapshot)).toThrow(StorageConflictError);
+    expect(readState(storage).state).toEqual(newer);
+  });
   it("round-trips a complete valid scenario", () => {
     const storage = memory();
     const s = initialState();
@@ -26,7 +36,7 @@ describe("browser persistence and recovery", () => {
     expect(parseState(serializeState(s))).toEqual(s);
   });
   it("protects incompatible/corrupt original saves", () => {
-    for (const raw of ["{", JSON.stringify({ ...initialState(), version: 2 })]) {
+    for (const raw of ["", "{", JSON.stringify({ ...initialState(), version: 99 })]) {
       const storage = memory(raw);
       const loaded = readState(storage);
       expect(loaded.blocked).toBe(true);

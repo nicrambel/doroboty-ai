@@ -2,17 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { verifyPacket } from "./verify-participant.mjs";
+import { resolvePackageTarget } from "./package-path.mjs";
 const root = process.cwd();
 const argument = process.argv[2];
 if (!argument || !path.isAbsolute(argument))
   throw new Error("Pass an absolute output directory outside the repository.");
-const target = path.resolve(argument);
-const relative = path.relative(root, target);
-if (
-  !(relative === ".." || relative.startsWith(`..${path.sep}`)) ||
-  root.startsWith(target + path.sep)
-)
-  throw new Error("Output must be outside the source repository and not its ancestor.");
+const target = resolvePackageTarget(root, argument);
 if (fs.existsSync(target) && fs.readdirSync(target).length)
   throw new Error("Output directory must be empty; no existing files will be removed.");
 verifyPacket(root);
@@ -32,6 +27,8 @@ const entries = [
   ".prettierrc.json",
   ".prettierignore",
   ".gitignore",
+  ".env.example",
+  ".gitattributes",
   "tokens.css",
   "GUI.md",
   "components.json",
@@ -44,6 +41,8 @@ const entries = [
   "scripts/bootstrap",
   "scripts/verify",
   "scripts/package-participant.mjs",
+  "scripts/package-path.mjs",
+  "scripts/package-path.test.mjs",
   "scripts/verify-participant.mjs",
   "docs/architecture.md",
   "docs/design-system",

@@ -1,4 +1,43 @@
 /* Application composition: existing source facts and controls inside shared reading surfaces. */
+.contribution-editor fieldset {
+  min-width: 0;
+}
+.contribution-editor > fieldset,
+.contribution-editor > fieldset > .field,
+.contribution-edit-activity .field {
+  margin-top: 18px;
+}
+.contribution-editor h4,
+.contribution-editor .contribution-edit-activity {
+  margin-top: 24px;
+}
+.contribution-edit-activity {
+  padding-block: 14px;
+  border-top: 1px solid var(--pp-line);
+}
+.contribution-edit-activity legend {
+  font-size: 16px;
+  font-weight: 600;
+}
+.contribution-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--gui-text);
+  border-radius: 10px;
+  background: white;
+  color: var(--gui-text);
+  font: inherit;
+}
+.contribution-select:focus-visible {
+  outline: 2px solid var(--gui-focus);
+  outline-offset: 2px;
+}
+.contribution-editor [data-slot="button"] {
+  max-width: 100%;
+  white-space: normal;
+}
 .application-page {
   padding-block: 28px 64px;
 }

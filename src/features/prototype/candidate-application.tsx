@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApplicationRecord } from "./application-record";
-import type { Application } from "./model";
+import type { CandidateApplicationView } from "./model";
 import { usePrototype } from "./store";
 
-export function CandidateApplication({ application }: { application: Application }) {
+export function CandidateApplication({ application }: { application: CandidateApplicationView }) {
   const { state, run } = usePrototype();
   const [confirming, setConfirming] = useState(false);
   const [announcement, setAnnouncement] = useState("");

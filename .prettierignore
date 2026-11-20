@@ -4,6 +4,10 @@ package-lock.json
 playwright-report*
 test-results
 artifacts
+.posthog-wizard-cache/
 
 # Preserve the versioned reference byte-for-byte; checked by its own scripts.
 docs/design-system/agent-kit/
+
+# Generated audit artifact; validated and rendered by production-readiness.
+docs/production-readiness.html
